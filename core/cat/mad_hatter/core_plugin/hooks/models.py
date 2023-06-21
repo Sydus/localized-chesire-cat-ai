@@ -49,6 +49,11 @@ def get_language_model(cat) -> BaseLLM:
         )
         llm = FactoryClass.get_llm_from_config(selected_llm_config.value)
 
+    print("LLM TEMPERATURE")
+    print(llm.temperature)
+    llm.temperature = 0
+    llm.max_tokens = 1024
+
     return llm
 
 

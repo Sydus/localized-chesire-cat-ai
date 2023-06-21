@@ -37,6 +37,9 @@ class AgentManager:
         allowed_tools = mad_hatter.execute_hook("agent_allowed_tools")
         allowed_tools_names = [t.name for t in allowed_tools]
 
+        print("iv")
+        print(input_variables)
+
         prompt = ConversationalAgent.create_prompt(
             tools=allowed_tools,
             prefix=prompt_prefix,

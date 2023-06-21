@@ -50,7 +50,7 @@ def agent_allowed_tools(cat) -> List[BaseTool]:
     default_tools_name = ["llm-math"]  # , "python_repl", "terminal"]
     default_tools = load_tools(default_tools_name, llm=cat.llm)
 
-    allowed_tools = tools + default_tools
+    allowed_tools = tools #+ default_tools
 
     return allowed_tools
 
@@ -76,5 +76,3 @@ def before_agent_creates_prompt(input_variables, main_prompt, cat):
     input_variables = [i for i in input_variables if i in main_prompt]
 
     return input_variables
-
-

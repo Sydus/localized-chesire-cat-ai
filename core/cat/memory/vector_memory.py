@@ -8,8 +8,9 @@ from cat.log import log
 from qdrant_client import QdrantClient
 from langchain.vectorstores import Qdrant
 from langchain.docstore.document import Document
-from qdrant_client.http.models import (Distance, VectorParams,  SearchParams,
-ScalarQuantization, ScalarQuantizationConfig, ScalarType, QuantizationSearchParams)
+from qdrant_client.http.models import (Distance, VectorParams, SearchParams,
+                                       ScalarQuantization, ScalarQuantizationConfig, ScalarType,
+                                       QuantizationSearchParams)
 
 
 class VectorMemory:
@@ -49,20 +50,19 @@ class VectorMemory:
         # - Procedural memory will contain tools and knowledge on how to do things
         self.collections = {}
         for collection_name in ["episodic", "declarative", "procedural"]:
-
             # Instantiate collection
             collection = VectorMemoryCollection(
                 cat=cat,
                 client=self.vector_db,
                 collection_name=collection_name,
                 embedding_function=self.embedder.embed_query,
-                vector_size = self.embedder_size,
+                vector_size=self.embedder_size,
             )
 
             # Update dictionary containing all collections
             # Useful for cross-searching and to create/use collections from plugins
             self.collections[collection_name] = collection
-            
+
             # Have the collection as an instance attribute
             # (i.e. do things like cat.memory.vectors.declarative.something())
             setattr(self, collection_name, collection)
@@ -76,7 +76,7 @@ class VectorMemoryCollection(Qdrant):
 
         # Get a Cat instance
         self.cat = cat
-        
+
         # Set embedding size (may be changed at runtime)
         self.embedder_size = vector_size
 
@@ -88,7 +88,7 @@ class VectorMemoryCollection(Qdrant):
         try:
             self.client.get_collection(self.collection_name)
             log(f'Collection "{self.collection_name}" already present in vector store', "INFO")
-            if self.client.get_collection(self.collection_name).config.params.vectors.size==self.embedder_size:
+            if self.client.get_collection(self.collection_name).config.params.vectors.size == self.embedder_size:
                 log(f'Collection "{self.collection_name}" has the same size of the embedder', "INFO")
             else:
                 log(f'Collection "{self.collection_name}" has different size of the embedder', "WARNING")
@@ -104,7 +104,7 @@ class VectorMemoryCollection(Qdrant):
 
     # create collection
     def create_collection(self):
-        
+
         log(f"Creating collection {self.collection_name} ...", "WARNING")
         self.client.recreate_collection(
             collection_name=self.collection_name,
@@ -123,12 +123,17 @@ class VectorMemoryCollection(Qdrant):
         # embed the text
         query_embedding = self.embedding_function(text)
 
+        print("We are trying to remember")
+        print(query_embedding)
+        print(metadata)
+
         # search nearest vectors
         return self.recall_memories_from_embedding(query_embedding, metadata=metadata, k=k)
 
     # retrieve similar memories from embedding
     def recall_memories_from_embedding(self, embedding, metadata=None, k=3):
         # retrieve memories
+
         memories = self.client.search(
             collection_name=self.collection_name,
             query_vector=embedding,
@@ -143,6 +148,7 @@ class VectorMemoryCollection(Qdrant):
                 )
             )
         )
+
         return [
             (
                 self._document_from_scored_point(m, self.content_payload_key, self.metadata_payload_key),
