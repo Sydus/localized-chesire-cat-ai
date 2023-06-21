@@ -18,6 +18,8 @@ test_db.db
 # old admin folder
 admin
 
+/mem
+
 # plugins are not tracked by git
 core/cat/plugins/*
 !core/cat/plugins/replete
