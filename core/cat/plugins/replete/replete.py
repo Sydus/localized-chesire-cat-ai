@@ -4,7 +4,7 @@ SCORE_MINIMUM = 0.83
 HISTORIC_MINIMUM = 0.95
 
 
-@hook
+#@hook
 def agent_prompt_prefix(cat) -> str:
     prefix = """Sei una AI, il tuo obbiettivo è rispondere a delle domande basandoti ESCLUSIVAMENTE alle informazioni che io ti do,
     qualsiasi domanda che non trova risposta in quello che ti dico va ignorata, la risposta in caso di domanda forviante sarà generica del tipo: 
@@ -19,12 +19,12 @@ def agent_prompt_prefix(cat) -> str:
     return prefix
 
 
-@hook
+#@hook
 def agent_prompt_instructions(cat) -> str:
     return ""
 
 
-@hook
+#@hook
 def agent_prompt_suffix(cat) -> str:
     suffix = """# Contesto
 
@@ -40,7 +40,7 @@ Non devi assolutamente includere nessuna domanda nella tua risposta, vai diretta
     return suffix
 
 
-@hook
+#@hook
 def before_cat_sends_message(message, cat):
     not_valid = """Purtroppo non ho abbastanza informazioni per rispondere a questa domanda"""
 

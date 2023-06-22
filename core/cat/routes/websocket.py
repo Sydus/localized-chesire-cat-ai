@@ -12,6 +12,9 @@ router = APIRouter()
 async def websocket_endpoint(websocket: WebSocket):
     ccat = websocket.app.state.ccat
 
+    # Reloading cat (Each session should be different)
+    ccat.bootstrap()
+
     await websocket.accept()
 
     async def receive_message():

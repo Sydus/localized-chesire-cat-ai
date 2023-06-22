@@ -43,6 +43,7 @@ def mount_admin_index(cheshire_cat_api):
         default_config = re.search(regex, html).group(1)
         html = html.replace(default_config, cat_core_config)
 
+
         return HTMLResponse(html)
 
 
