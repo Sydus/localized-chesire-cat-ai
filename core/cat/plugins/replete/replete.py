@@ -1,4 +1,5 @@
 from cat.mad_hatter.decorators import tool, hook
+from cat.log import log
 
 SCORE_MINIMUM = 0.83
 HISTORIC_MINIMUM = 0.95
@@ -40,43 +41,43 @@ Ricorda che se la richiesta non è inerente a queste informazioni devi risponder
     return suffix
 
 
-#@hook
+# @hook
 def before_cat_sends_message(message, cat):
     not_valid = """Purtroppo non ho abbastanza informazioni per rispondere a questa domanda"""
 
     # Let's reformat the code :))))))
 
-    print("CAT RESPONSE")
-    print(message["content"])
+    log("CAT RESPONSE")
+    log(message["content"])
 
     if "why" not in message or "memory" not in message["why"]:
         message["content"] = not_valid
         return message
 
     # Check if the historic has a lot of impact
-    print(message)
     historic = message["why"]["memory"]["episodic"]
 
     if len(historic) > 0:
         historic = historic[0]
         if historic["score"] >= HISTORIC_MINIMUM:
-            print("Historic has a lot of points :) " + str(historic["score"]))
+            log("Historic has a lot of points :) " + str(historic["score"]))
             return message
         else:
-            print("Historic has lower points: " + str(historic["score"]))
-
+            log("Historic has lower points: " + str(historic["score"]))
 
     # The idea is to avoid any episodic etc etc
     declarative = message["why"]["memory"]["declarative"]  # the first is the highest score
 
     if len(declarative) > 0:
         declarative = declarative[0]
-        print("Current max score is")
-        print(declarative["score"])
+        log("Current max score is")
+        log(declarative["score"])
 
         if declarative["score"] < SCORE_MINIMUM:
-            print("DOVREI MODIFICARE IL MESSAGIO BELLO")
-            # message["content"] = not_valid
-
+            message["content"] = not_valid
+    else:
+        log("No declarative found :(")
+        message["content"] = not_valid
+        return message
 
     return message
