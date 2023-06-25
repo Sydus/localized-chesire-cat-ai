@@ -53,7 +53,7 @@ def agent_allowed_tools(cat) -> List[BaseTool]:
     #default_tools = load_tools(default_tools_name, llm=cat.llm)
 
 
-    allowed_tools = tools #+ default_tools
+  #  allowed_tools = tools #+ default_tools
 
     return tools
 

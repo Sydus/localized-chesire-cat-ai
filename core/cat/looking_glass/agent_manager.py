@@ -13,7 +13,7 @@ class AgentManager:
     def get_agent_executor(self):
         mad_hatter = self.cat.mad_hatter
 
-        prompt_prefix = mad_hatter.execute_hook("agent_prompt_prefix") + "\n# Tools:"
+        prompt_prefix = mad_hatter.execute_hook("agent_prompt_prefix")
         prompt_format_instructions = mad_hatter.execute_hook("agent_prompt_instructions")
         prompt_suffix = mad_hatter.execute_hook("agent_prompt_suffix")
 
@@ -37,8 +37,6 @@ class AgentManager:
         allowed_tools = mad_hatter.execute_hook("agent_allowed_tools")
         allowed_tools_names = [t.name for t in allowed_tools]
 
-        print("iv")
-        print(input_variables)
 
         prompt = ConversationalAgent.create_prompt(
             tools=allowed_tools,

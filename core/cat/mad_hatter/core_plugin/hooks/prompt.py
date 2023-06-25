@@ -160,7 +160,6 @@ def agent_prompt_episodic_memories(memory_docs: List[Document], cat) -> str:
 
         # Get Time information in the Document metadata
         timestamp = m[0].metadata["when"]
-
         # Get Current Time - Time when memory was stored
         delta = timedelta(seconds=(time.time() - timestamp))
 

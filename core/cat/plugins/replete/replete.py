@@ -23,7 +23,7 @@ def agent_prompt_prefix(cat) -> str:
 
 @hook
 def agent_prompt_instructions(cat) -> str:
-    return ""
+    return """"""
 
 
 @hook
@@ -40,7 +40,7 @@ Ricorda che se la richiesta non è inerente a queste informazioni devi risponder
     return suffix
 
 
-# @hook
+#@hook
 def before_cat_sends_message(message, cat):
     not_valid = """Purtroppo non ho abbastanza informazioni per rispondere a questa domanda"""
 
@@ -54,21 +54,29 @@ def before_cat_sends_message(message, cat):
         return message
 
     # Check if the historic has a lot of impact
-    historic = message["why"]["memory"]["vectors"]["episodic"][0]
+    print(message)
+    historic = message["why"]["memory"]["episodic"]
 
-    if historic["score"] >= HISTORIC_MINIMUM:
-        print("Historic has a lot of points :) " + str(historic["score"]))
-        return message
-    else:
-        print("Historic has lower points: " + str(historic["score"]))
+    if len(historic) > 0:
+        historic = historic[0]
+        if historic["score"] >= HISTORIC_MINIMUM:
+            print("Historic has a lot of points :) " + str(historic["score"]))
+            return message
+        else:
+            print("Historic has lower points: " + str(historic["score"]))
+
 
     # The idea is to avoid any episodic etc etc
-    declarative = message["why"]["memory"]["vectors"]["declarative"][0]  # the first is the highest score
+    declarative = message["why"]["memory"]["declarative"]  # the first is the highest score
 
-    print("Current max score is")
-    print(declarative["score"])
+    if len(declarative) > 0:
+        declarative = declarative[0]
+        print("Current max score is")
+        print(declarative["score"])
 
-    if declarative["score"] < SCORE_MINIMUM:
-        message["content"] = not_valid
+        if declarative["score"] < SCORE_MINIMUM:
+            print("DOVREI MODIFICARE IL MESSAGIO BELLO")
+            # message["content"] = not_valid
+
 
     return message

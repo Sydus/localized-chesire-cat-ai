@@ -150,10 +150,9 @@ class MadHatter:
                 json_file = open(plugin_json_metadata_file_path)
                 json_file_data = json.load(json_file)
                 json_file.close()
-                return meta
-            except Exception as e:
-
+            except Exception:
                 log(f"Loading plugin {plugin_folder} metadata, defaulting to generated values", "INFO")
+
         meta["name"] = json_file_data.get("name", to_camel_case(plugin_id))
         meta["description"] = json_file_data.get("description", (
             "Description not found for this plugin. "
@@ -181,7 +180,6 @@ class MadHatter:
 
     # execute requested hook
     def execute_hook(self, hook_name, *args):
-        print("trying " + str(hook_name))
         for h in self.hooks:
             if hook_name == h["hook_name"]:
                 hook = h["hook_function"]
