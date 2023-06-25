@@ -12,7 +12,6 @@ from qdrant_client.http.models import (Distance, VectorParams, SearchParams,
                                        ScalarQuantization, ScalarQuantizationConfig, ScalarType,
                                        QuantizationSearchParams)
 
-
 class VectorMemory:
     def __init__(self, cat, verbose=False) -> None:
         self.verbose = verbose
@@ -23,23 +22,7 @@ class VectorMemory:
         if self.embedder is None:
             raise Exception("No embedder passed to VectorMemory")
 
-        qdrant_host = os.getenv("VECTOR_MEMORY_HOST", "cheshire_cat_vector_memory")
-        qdrant_port = int(os.getenv("VECTOR_MEMORY_PORT", 6333))
-
-        try:
-            s = socket.socket()
-            s.connect((qdrant_host, qdrant_port))
-        except Exception:
-            log("QDrant does not respond to %s:%s" % (qdrant_host, qdrant_port), "ERROR")
-            sys.exit()
-        finally:
-            s.close()
-
-        # Qdrant vector DB client
-        self.vector_db = QdrantClient(
-            host=qdrant_host,
-            port=qdrant_port,
-        )
+        self.connect_to_vector_memory()
 
         # get current embedding size (langchain classes do not store it)
         self.embedder_size = len(cat.embedder.embed_query("hello world"))
@@ -66,6 +49,27 @@ class VectorMemory:
             # Have the collection as an instance attribute
             # (i.e. do things like cat.memory.vectors.declarative.something())
             setattr(self, collection_name, collection)
+
+    def connect_to_vector_memory(self) -> None:
+        qdrant_host = os.getenv("VECTOR_MEMORY_HOST",
+                                "cheshire_cat_vector_memory")
+        qdrant_port = int(os.getenv("VECTOR_MEMORY_PORT", 6333))
+
+        try:
+            s = socket.socket()
+            s.connect((qdrant_host, qdrant_port))
+        except Exception:
+            log("QDrant does not respond to %s:%s" %
+                (qdrant_host, qdrant_port), "ERROR")
+            sys.exit()
+        finally:
+            s.close()
+
+        # Qdrant vector DB client
+        self.vector_db = QdrantClient(
+            host=qdrant_host,
+            port=qdrant_port,
+        )
 
 
 class VectorMemoryCollection(Qdrant):
@@ -109,7 +113,8 @@ class VectorMemoryCollection(Qdrant):
         log(f"Creating collection {self.collection_name} ...", "WARNING")
         self.client.recreate_collection(
             collection_name=self.collection_name,
-            vectors_config=VectorParams(size=self.embedder_size, distance=Distance.COSINE),
+            vectors_config=VectorParams(
+                size=self.embedder_size, distance=Distance.COSINE),
             quantization_config=ScalarQuantization(
                 scalar=ScalarQuantizationConfig(
                     type=ScalarType.INT8,
@@ -122,15 +127,17 @@ class VectorMemoryCollection(Qdrant):
         self.cat.mad_hatter.execute_hook('after_collection_created', self)
 
     # retrieve similar memories from text
-    def recall_memories_from_text(self, text, metadata=None, k=3):
+    def recall_memories_from_text(self, text, metadata=None, k=5, threshold=0.0):
         # embed the text
         query_embedding = self.embedding_function(text)
 
         # search nearest vectors
-        return self.recall_memories_from_embedding(query_embedding, metadata=metadata, k=k)
+        return self.recall_memories_from_embedding(
+            query_embedding, metadata=metadata, k=k, threshold=threshold
+        )
 
     # retrieve similar memories from embedding
-    def recall_memories_from_embedding(self, embedding, metadata=None, k=3):
+    def recall_memories_from_embedding(self, embedding, metadata=None, k=5, threshold=0.0):
         # retrieve memories
 
         memories = self.client.search(
@@ -140,6 +147,7 @@ class VectorMemoryCollection(Qdrant):
             with_payload=True,
             with_vectors=True,
             limit=k,
+            score_threshold=threshold,
             search_params=SearchParams(
                 quantization=QuantizationSearchParams(
                     ignore=False,
@@ -150,7 +158,8 @@ class VectorMemoryCollection(Qdrant):
 
         return [
             (
-                self._document_from_scored_point(m, self.content_payload_key, self.metadata_payload_key),
+                self._document_from_scored_point(
+                    m, self.content_payload_key, self.metadata_payload_key),
                 m.score,
                 m.vector
             )
