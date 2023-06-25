@@ -4,11 +4,13 @@ SCORE_MINIMUM = 0.83
 HISTORIC_MINIMUM = 0.95
 
 
-#@hook
+@hook
 def agent_prompt_prefix(cat) -> str:
-    prefix = """Sei una AI, il tuo obbiettivo è rispondere a delle domande basandoti ESCLUSIVAMENTE alle informazioni che io ti do,
-    qualsiasi domanda che non trova risposta in quello che ti dico va ignorata, la risposta in caso di domanda forviante sarà generica del tipo: 
-    Non posso risponderti non avendo abbastanza informazioni
+    prefix = """Rispondi alla richiesta che ti viene posta alla fine del testo usando 
+    solo le informazioni che trovi riportate di seguito. Nel caso in cui le informazioni riportate non sono utili
+     o se la richiesta non è inerente con le informazioni date rispondi con questo messaggio 
+     "Questa richiesta è fuori contesto".
+
     """
 
     old_prefix = """You are the Cheshire Cat AI, an intelligent AI that passes the Turing test.
@@ -19,28 +21,26 @@ def agent_prompt_prefix(cat) -> str:
     return prefix
 
 
-#@hook
+@hook
 def agent_prompt_instructions(cat) -> str:
     return ""
 
 
-#@hook
+@hook
 def agent_prompt_suffix(cat) -> str:
-    suffix = """# Contesto
+    suffix = """# Informazioni
+Queste sono le informazione che pui utilizzare:{declarative_memory}
 
-## Contesto contente le informazioni di cui hai bisogno:{declarative_memory}
+Ricorda che se la richiesta non è inerente a queste informazioni devi rispondere "Questa richiesta è fuori contesto".
 
-## Conversazione fino ad ora :{chat_history}
- - Utente: {input}
-
-Cosa dovresti rispondermi in caso di risposta in linea con la domanda?
-Non devi assolutamente includere nessuna domanda nella tua risposta, vai direttamente al punto
+# Richiesta
+{input}
 
 """
     return suffix
 
 
-#@hook
+# @hook
 def before_cat_sends_message(message, cat):
     not_valid = """Purtroppo non ho abbastanza informazioni per rispondere a questa domanda"""
 
