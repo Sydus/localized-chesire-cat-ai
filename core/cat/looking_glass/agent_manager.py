@@ -39,7 +39,7 @@ class AgentManager:
 
 
         prompt = ConversationalAgent.create_prompt(
-            tools=allowed_tools,
+            tools=[],
             prefix=prompt_prefix,
             format_instructions=prompt_format_instructions,
             suffix=prompt_suffix,
@@ -57,14 +57,14 @@ class AgentManager:
         # init agent
         agent = ConversationalAgent(
             llm_chain=agent_chain,
-            allowed_tools=allowed_tools_names,
+           # allowed_tools=allowed_tools_names,
             verbose=True
         )
 
         # agent executor
         agent_executor = AgentExecutor.from_agent_and_tools(
             agent=agent,
-            tools=allowed_tools,
+            tools=[],
             return_intermediate_steps=True,
             verbose=True
         )

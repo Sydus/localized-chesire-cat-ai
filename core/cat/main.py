@@ -63,7 +63,7 @@ cheshire_cat_api.include_router(websocket.router, tags=["Websocket"])
 # https://github.com/tiangolo/fastapi/discussions/9070
 
 
-print("STATIC MOUNT")
+
 # admin (index file with dynamic configuration)
 admin.mount_admin_index(cheshire_cat_api)
 # admin (static build)

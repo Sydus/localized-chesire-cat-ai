@@ -242,6 +242,7 @@ class CheshireCat:
 
         # load agent (will rebuild both agent and agent_executor
         #   based on context and plugins)
+
         agent_executor = self.agent_manager.get_agent_executor()
 
         # reply with agent

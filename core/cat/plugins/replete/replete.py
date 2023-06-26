@@ -24,7 +24,21 @@ def agent_prompt_prefix(cat) -> str:
 
 @hook
 def agent_prompt_instructions(cat) -> str:
-    return """"""
+    return """Per rispondere, utilizza questo format:
+
+```
+Thought: Can I generate a response just by using the info from this request? No
+{ai_prefix}: "Questa richiesta è fuori contesto"
+```
+
+Quando invece hai una risposta, usa questo format:
+
+```
+Thought: Can I generate a response just by using the info from this request? Yes
+{ai_prefix}: [your response here]
+```
+
+"""
 
 
 @hook
@@ -37,18 +51,22 @@ Ricorda che se la richiesta non è inerente a queste informazioni devi risponder
 # Richiesta
 {input}
 
+# Cosa dovrebbe risponder l'AI?
+
+{agent_scratchpad}
+
 """
     return suffix
 
 
-# @hook
+@hook
 def before_cat_sends_message(message, cat):
     not_valid = """Purtroppo non ho abbastanza informazioni per rispondere a questa domanda"""
 
     # Let's reformat the code :))))))
 
-    log("CAT RESPONSE")
-    log(message["content"])
+    print("CAT RESPONSE")
+    print(message["content"])
 
     if "why" not in message or "memory" not in message["why"]:
         message["content"] = not_valid
@@ -60,23 +78,23 @@ def before_cat_sends_message(message, cat):
     if len(historic) > 0:
         historic = historic[0]
         if historic["score"] >= HISTORIC_MINIMUM:
-            log("Historic has a lot of points :) " + str(historic["score"]))
+            print("Historic has a lot of points :) " + str(historic["score"]))
             return message
         else:
-            log("Historic has lower points: " + str(historic["score"]))
+            print("Historic has lower points: " + str(historic["score"]))
 
     # The idea is to avoid any episodic etc etc
     declarative = message["why"]["memory"]["declarative"]  # the first is the highest score
 
     if len(declarative) > 0:
         declarative = declarative[0]
-        log("Current max score is")
-        log(declarative["score"])
+        print("Current max score is")
+        print(declarative["score"])
 
         if declarative["score"] < SCORE_MINIMUM:
             message["content"] = not_valid
     else:
-        log("No declarative found :(")
+        print("No declarative found :(")
         message["content"] = not_valid
         return message
 
