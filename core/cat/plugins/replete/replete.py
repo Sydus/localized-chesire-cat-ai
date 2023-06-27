@@ -91,9 +91,6 @@ def before_cat_sends_message(message, cat):
     # The idea is to avoid any episodic etc etc
     declarative = message["why"]["memory"]["declarative"]  # the first is the highest score
 
-    historic = message["why"]["memory"]["episodic"]
-    print(historic)
-
     if len(declarative) > 0:
         declarative = declarative[0]
         print("Current max score is")
