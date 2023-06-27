@@ -11,6 +11,11 @@ from cat.mad_hatter.mad_hatter import MadHatter
 from cat.memory.working_memory import WorkingMemory
 from cat.memory.long_term_memory import LongTermMemory
 from cat.looking_glass.agent_manager import AgentManager
+from langchain.chains.question_answering import load_qa_chain
+from langchain.chains import LLMChain
+
+from langchain.docstore.document import Document
+from langchain.prompts import PromptTemplate
 
 
 # main class
@@ -25,7 +30,6 @@ class CheshireCat:
         # queue of cat messages not directly related to last user input
         # i.e. finished uploading a file
         self.web_socket_notifications = []
-
 
     def bootstrap(self):
         """This method is called when the cat is instantiated and
@@ -120,7 +124,7 @@ class CheshireCat:
 
     def get_static_url(self):
         return self.get_base_url() + "/static"
-    
+
     def get_static_path(self):
         return os.path.join(os.getcwd(), "cat/static/")
 
@@ -128,7 +132,6 @@ class CheshireCat:
 
         user_message = self.working_memory["user_message_json"]["text"]
         prompt_settings = self.working_memory["user_message_json"]["prompt_settings"]
-
 
         # hook to do something before recall begins
         k, threshold = self.mad_hatter.execute_hook("before_cat_recalls_memories", user_message)
@@ -200,7 +203,6 @@ class CheshireCat:
 
         self.working_memory["user_message_json"]["prompt_settings"] = prompt_settings
 
-
     def __call__(self, user_message_json):
 
         log(user_message_json, "INFO")
@@ -213,7 +215,6 @@ class CheshireCat:
         self.store_new_message_in_working_memory(user_message_json)
 
         # TODO another hook here?
-
 
         # recall episodic and declarative memories from vector collections
         #   and store them in working_memory
@@ -240,6 +241,7 @@ class CheshireCat:
         #   Info will be extracted from working memory
         agent_executor_input = self.format_agent_executor_input()
 
+        """
         # load agent (will rebuild both agent and agent_executor
         #   based on context and plugins)
 
@@ -248,6 +250,8 @@ class CheshireCat:
         # reply with agent
         try:
             cat_message = agent_executor(agent_executor_input)
+            print("Cat message total")
+            print(cat_message)
         except Exception as e:
             # This error happens when the LLM
             #   does not respect prompt instructions.
@@ -261,18 +265,130 @@ class CheshireCat:
 
             unparsable_llm_output = error_description.replace("Could not parse LLM output: `", "").replace("`", "")
             cat_message = {
-                "input" : agent_executor_input["input"],
+                "input": agent_executor_input["input"],
                 "intermediate_steps": [],
                 "output": unparsable_llm_output
             }
 
         log("cat_message:", "DEBUG")
         log(cat_message, "DEBUG")
+"""
+
+        """
+        START @Colasuonno (Model change and using stuff chain)
+        """
+
+        """
+        CHECK FOR QUESTION:
+        
+        If the question is like
+        "Puoi ripetere?"
+        "Non ho capito"
+        "Approfondisci"
+        
+        I want to re-write this question in this way
+        
+        
+        "Puoi ripetere?" -> "{old_question}"
+        "Non ho capito" -> "Puoi spiegarmi dettagliatamente {old_question}"
+        "Approfondisci" -> ...
+        
+        """
+
+        prompt_question_format = """
+        You are a question generator.
+        You have to generate question starting from this input:
+        
+        Input: {question}
+        
+        If the question is too generic, you have to generate a question in this way: {question} + {last_question}
+       
+       Answer in Italian:
+        """
+
+        PROMPT_REFORMAT = PromptTemplate.from_template(prompt_question_format)
+        chat_history = self.working_memory["history"]
+        print("FORMATTED QUESTION")
+
+        chain = LLMChain(llm=self.llm, prompt=PROMPT_REFORMAT)
+
+        chain_info = {
+            "question": agent_executor_input["input"],
+            "last_question": chat_history[len(chat_history) - 2]["message"] if
+                                           agent_executor_input[
+                                               "chat_history"] != "" else
+                                           agent_executor_input["input"]
+        }
+        print(chain_info)
+        formatted_question = chain.run(chain_info)
+
+        print(formatted_question)
+
+        # Changing the message input
+        self.working_memory["user_message_json"]["text"] = formatted_question
+
+        # Re-Defining declaring memory
+        try:
+            self.recall_relevant_memories_to_working_memory()
+        except Exception as e:
+            log(e)
+            traceback.print_exc(e)
+
+            err_message = (
+                "Vector memory error: you probably changed "
+                "Embedder and old vector memory is not compatible. "
+                "Please delete `core/long_term_memory` folder."
+            )
+            return {
+                "error": False,
+                # TODO: Otherwise the frontend gives notice of the error
+                #   but does not show what the error is
+                "content": err_message,
+                "why": {},
+            }
+        print("Memory refactored")
+
+        # Reformat the agent input
+        agent_executor_input = self.format_agent_executor_input()
+
+        prompt_template = """Use the following pieces of context to answer the question at the end. If you don't know the answer,
+         just say that you don't know, don't try to make up an answer.
+
+                   {context}
+
+                   Question: {question}
+                   Answer in Italian:"""
+
+        print("Prompt template")
+        print(prompt_template)
+
+        PROMPT = PromptTemplate(
+            template=prompt_template, input_variables=["context", "question"]
+        )
+        chain = load_qa_chain(self.llm, chain_type="stuff", prompt=PROMPT)
+
+        chain_info = {"input_documents": [
+            Document(
+                page_content="You have no information" if agent_executor_input["declarative_memory"] == "" else
+                agent_executor_input["declarative_memory"],
+                metadata={},
+            )
+        ], "question": formatted_question,
+        }
+
+        cat_message = chain(chain_info)
+
+        """
+        END @Colasuonno
+        """
+
+        print("END CAT MESSAGE")
+        print(cat_message)
 
         # update conversation history
         user_message = self.working_memory["user_message_json"]["text"]
         self.working_memory.update_conversation_history(who="Human", message=user_message)
-        self.working_memory.update_conversation_history(who="AI", message=cat_message["output"])
+        self.working_memory.update_conversation_history(who="AI", message=cat_message["output_text"])
 
         # store user message in episodic memory
         # TODO: vectorize and store also conversation chunks
@@ -288,7 +404,7 @@ class CheshireCat:
         final_output = {
             "error": False,
             "type": "chat",
-            "content": cat_message.get("output"),
+            "content": cat_message.get("output_text"),
             "why": {
                 "input": cat_message.get("input"),
                 "intermediate_steps": cat_message.get("intermediate_steps"),

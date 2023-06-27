@@ -4,7 +4,13 @@ from copy import copy
 from cat.log import log
 from langchain.agents import AgentExecutor, ConversationalAgent
 from langchain.chains import LLMChain
-
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.vectorstores import Chroma
+from langchain.docstore.document import Document
+from langchain.prompts import PromptTemplate
+from langchain.indexes.vectorstore import VectorstoreIndexCreator
+from langchain.chains.question_answering import load_qa_chain
 
 class AgentManager:
     def __init__(self, cat):
