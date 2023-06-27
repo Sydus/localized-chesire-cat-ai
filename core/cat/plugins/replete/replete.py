@@ -1,7 +1,7 @@
 from cat.mad_hatter.decorators import tool, hook
 from cat.log import log
 
-SCORE_MINIMUM = 0.83
+SCORE_MINIMUM = 0.75
 HISTORIC_MINIMUM = 0.95
 
 
@@ -36,8 +36,8 @@ Quando invece hai una risposta, usa questo format:
 ```
 Thought: Can I generate a response just by using the info from this request? Yes
 {ai_prefix}: [your response here]
+OLD_CONVERSATION: [Yes if you used conversation information No otherwise]
 ```
-
 """
 
 
@@ -47,6 +47,8 @@ def agent_prompt_suffix(cat) -> str:
 Queste sono le informazione che pui utilizzare:{declarative_memory}
 
 Ricorda che se la richiesta non è inerente a queste informazioni devi rispondere "Questa richiesta è fuori contesto".
+
+## Conversazione fino ad adesso:{chat_history}
 
 # Richiesta
 {input}
@@ -72,8 +74,10 @@ def before_cat_sends_message(message, cat):
         message["content"] = not_valid
         return message
 
-    # Check if the historic has a lot of impact
+    """
+        # Check if the historic has a lot of impact
     historic = message["why"]["memory"]["episodic"]
+
 
     if len(historic) > 0:
         historic = historic[0]
@@ -82,9 +86,13 @@ def before_cat_sends_message(message, cat):
             return message
         else:
             print("Historic has lower points: " + str(historic["score"]))
+    """
 
     # The idea is to avoid any episodic etc etc
     declarative = message["why"]["memory"]["declarative"]  # the first is the highest score
+
+    historic = message["why"]["memory"]["episodic"]
+    print(historic)
 
     if len(declarative) > 0:
         declarative = declarative[0]
@@ -95,7 +103,21 @@ def before_cat_sends_message(message, cat):
             message["content"] = not_valid
     else:
         print("No declarative found :(")
+
+        # Checking if langchain detected the old conversation used
+        if "OLD_CONVERSATION" in message["content"]:
+            old_conversation = message["content"].split("OLD_CONVERSATION")
+            last_part = old_conversation[1].lower()
+            if "yes" in last_part:
+                print("Langchain detected a conversation usage")
+                message["content"] = old_conversation[0]
+                return message
+
         message["content"] = not_valid
         return message
+
+    # Clearing the old_conversation
+    if "OLD_CONVERSATION" in message["content"]:
+        message["content"] = message["content"].split("OLD_CONVERSATION")[0]
 
     return message
