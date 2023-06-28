@@ -297,12 +297,21 @@ class CheshireCat:
 
         prompt_question_format = """
         You are a question generator.
-        You have to generate question starting from this input:
+        
+        You have to generate question with the same meaning starting from this input:
         
         Input: {question}
         
-        If the question is too generic, you have to generate a question in this way: {question} + {last_question}
-       
+        ```
+        Thought: Is the input well defined (Has a meaning alone)? Yes
+        {question}
+        ```
+        
+        ```
+        Thought: Is the input well defined (Has a meaning alone)? No
+        {last_question} + {question}
+        ```
+    
        Answer in Italian:
         """
 
@@ -323,6 +332,10 @@ class CheshireCat:
         formatted_question = chain.run(chain_info)
 
         print(formatted_question)
+
+        questions_formatted = formatted_question.split("?")
+
+        #max_working_memory, max_question = self.analyze_every_questions_response(questions_formatted)
 
         # Changing the message input
         self.working_memory["user_message_json"]["text"] = formatted_question
@@ -346,16 +359,24 @@ class CheshireCat:
                 "content": err_message,
                 "why": {},
             }
+
+        # Changing the message input
+        #self.working_memory = max_working_memory
+        #print("Max working declarative memory question is")
+        #@print(max_question)
+
+
         print("Memory refactored")
 
         # Reformat the agent input
         agent_executor_input = self.format_agent_executor_input()
 
         prompt_template = """Use the following pieces of context to answer the question at the end. If you don't know the answer,
-         just say that you don't know, don't try to make up an answer.
+         just say that you don't know, don't try to make up an answer. Your answer can't include questions.
 
                    {context}
 
+                
                    Question: {question}
                    Answer in Italian:"""
 
@@ -418,3 +439,55 @@ class CheshireCat:
         final_output = self.mad_hatter.execute_hook("before_cat_sends_message", final_output)
 
         return final_output
+
+
+
+    def analyze_every_questions_response(self, questions):
+            """
+            This function is used to loop all the questions and get the most declarative
+            Returns:
+            """
+
+            max_declarative = 0
+            max_working_memory = None
+            max_question = None
+
+            for question in questions:
+
+                if len(question) == 0 or type(question) is not str:
+                    continue
+
+                print("Analyzing " + str(question))
+
+                # Changing the message input
+                self.working_memory["user_message_json"]["text"] = question
+
+                # Re-Defining declaring memory
+                try:
+                    self.recall_relevant_memories_to_working_memory()
+                except Exception as e:
+                    log(e)
+                    traceback.print_exc(e)
+
+                    err_message = (
+                        "Vector memory error: you probably changed "
+                        "Embedder and old vector memory is not compatible. "
+                        "Please delete `core/long_term_memory` folder."
+                    )
+                    return {
+                        "error": False,
+                        # TODO: Otherwise the frontend gives notice of the error
+                        #   but does not show what the error is
+                        "content": err_message,
+                        "why": {},
+                    }
+
+                declarative_len = len(self.working_memory["declarative_memories"])
+
+                if max_declarative < declarative_len or not max_question:
+                    max_declarative = declarative_len
+                    max_working_memory = self.working_memory
+                    max_question = question
+
+            return max_working_memory, max_question + "?"
+
