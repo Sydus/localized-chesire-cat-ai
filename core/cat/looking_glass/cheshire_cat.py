@@ -296,24 +296,15 @@ class CheshireCat:
         """
 
         prompt_question_format = """
-        You are a question generator.
-        
-        You have to generate question with the same meaning starting from this input:
-        
-        Input: {question}
-        
-        ```
-        Thought: Is the input well defined (Has a meaning alone)? Yes
-        {question}
-        ```
-        
-        ```
-        Thought: Is the input well defined (Has a meaning alone)? No
-        {last_question} + {question}
-        ```
-    
-       Answer in Italian:
-        """
+                You are a question generator.
+                You have to generate question with the same meaning starting from this input:
+
+                Input: {question}
+
+                If the question is too generic, you have to generate a question in this way: {question} + {last_question}
+
+               Answer in Italian:
+                """
 
         PROMPT_REFORMAT = PromptTemplate.from_template(prompt_question_format)
         chat_history = self.working_memory["history"]
@@ -329,18 +320,21 @@ class CheshireCat:
                                            agent_executor_input["input"]
         }
         print(chain_info)
-        formatted_question = chain.run(chain_info)
+       # formatted_question = chain.run(chain_info)
 
-        print(formatted_question)
-
-        questions_formatted = formatted_question.split("?")
+      #  print(formatted_question)
 
         #max_working_memory, max_question = self.analyze_every_questions_response(questions_formatted)
 
         # Changing the message input
-        self.working_memory["user_message_json"]["text"] = formatted_question
+       # self.working_memory["user_message_json"]["text"] = formatted_question
 
-        # Re-Defining declaring memory
+
+        """
+        
+        UNCOMMENT IF YOU WANT TO ENABLE THE FIRST CHAIN
+        
+         # Re-Defining declaring memory
         try:
             self.recall_relevant_memories_to_working_memory()
         except Exception as e:
@@ -367,6 +361,9 @@ class CheshireCat:
 
 
         print("Memory refactored")
+        """
+
+
 
         # Reformat the agent input
         agent_executor_input = self.format_agent_executor_input()
@@ -376,7 +373,7 @@ class CheshireCat:
 
                    {context}
 
-                
+                    
                    Question: {question}
                    Answer in Italian:"""
 
@@ -394,7 +391,7 @@ class CheshireCat:
                 agent_executor_input["declarative_memory"],
                 metadata={},
             )
-        ], "question": formatted_question,
+        ], "question": agent_executor_input["input"],
         }
 
         cat_message = chain(chain_info)
